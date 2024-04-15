@@ -7,6 +7,7 @@ This a Next.js app that filters users using server actions and URL queries
 - Next.js 14
 - Typescript
 - Tailwindcss
+- Shadcn UI
 - Drizzle ORM
 - SQLite
 

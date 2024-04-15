@@ -1,6 +1,7 @@
+import { headers } from "next/headers";
+import { db } from "@/drizzle/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { db } from "@/drizzle/db";
 import { Users, users } from "@/drizzle/schema";
 import {
   Card,
@@ -16,7 +17,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { and, eq, like } from "drizzle-orm";
-
 import {
   Table,
   TableBody,
@@ -32,7 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { headers } from "next/headers";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const countries = ["Algeria", "Canada"];
 
@@ -45,25 +53,21 @@ export default async function Home({
   const tabDefaultValue = searchParams.tab as "users" | "add_user";
   const country = searchParams.country as string | undefined;
   const name = searchParams.name as string | undefined;
+  const dialog = searchParams.dialog as string | undefined;
 
   try {
     const dbQuery = db.select().from(users);
-    if (country || name) {
-      const queryList = [];
-      if (country)
-        queryList.push(eq(users.country, country.toLocaleLowerCase()));
-      if (name) queryList.push(like(users.name, `%${name}%`));
-
-      usersList = await dbQuery.where(and(...queryList));
-    } else {
-      usersList = await dbQuery;
-    }
+    const queryList = [];
+    if (country) queryList.push(eq(users.country, country.toLocaleLowerCase()));
+    if (name) queryList.push(like(users.name, `%${name}%`));
+    usersList = await dbQuery.where(and(...queryList));
   } catch (error) {
     console.error(error);
   }
 
   if (!usersList) return <p>Error fetching users</p>;
-  
+
+  console.log({ tabDefaultValue });
   return (
     <main className="flex min-h-screen flex-col items-center gap-8 p-24">
       <h1 className="text-6xl font-black">Next.js App Router Filter</h1>
@@ -102,7 +106,6 @@ export default async function Home({
                   for (const pair of url.searchParams.entries() as unknown as []) {
                     query += `${pair[0]}=${pair[1]}&`;
                   }
-                  console.log(query);
                   redirect(url.origin + query);
                 }}
                 className="flex flex-col gap-y-2"
@@ -114,13 +117,13 @@ export default async function Home({
                   placeholder="Search for name"
                 />
                 <div>
-                  <Select name="country" defaultValue={country}>
+                  <Select name="country" defaultValue={""}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a country" />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country, i) => (
-                        <SelectItem key={i} value={country.toLocaleLowerCase()}>
+                        <SelectItem key={i} value={country}>
                           {country}
                         </SelectItem>
                       ))}
@@ -201,7 +204,6 @@ export default async function Home({
                 } catch (error) {
                   console.error(error);
                 }
-                revalidatePath("/");
                 redirect("?tab=users");
               }}
             >
