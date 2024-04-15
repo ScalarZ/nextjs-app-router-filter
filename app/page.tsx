@@ -1,113 +1,246 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { db } from "@/drizzle/db";
+import { Users, users } from "@/drizzle/schema";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { revalidatePath } from "next/cache";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Trash2 } from "lucide-react";
+import { and, eq, like } from "drizzle-orm";
 
-export default function Home() {
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { headers } from "next/headers";
+
+const countries = ["Algeria", "Canada"];
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { [key in string]: string | string[] | undefined };
+}) {
+  let usersList: Users[] | null = null;
+  const tabDefaultValue = searchParams.tab as "users" | "add_user";
+  const country = searchParams.country as string | undefined;
+  const name = searchParams.name as string | undefined;
+
+  try {
+    const dbQuery = db.select().from(users);
+    if (country || name) {
+      const queryList = [];
+      if (country)
+        queryList.push(eq(users.country, country.toLocaleLowerCase()));
+      if (name) queryList.push(like(users.name, `%${name}%`));
+
+      usersList = await dbQuery.where(and(...queryList));
+    } else {
+      usersList = await dbQuery;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  if (!usersList) return <p>Error fetching users</p>;
+  
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main className="flex min-h-screen flex-col items-center gap-8 p-24">
+      <h1 className="text-6xl font-black">Next.js App Router Filter</h1>
+      <p className="text-xl font-medium text-stone-400">
+        No &quot;use client&quot;
+      </p>
+      <Tabs
+        defaultValue={tabDefaultValue === "add_user" ? "add-user" : "users"}
+        className="w-[400px]"
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <Link href="?tab=users">
+            <TabsTrigger value="users">Users</TabsTrigger>
+          </Link>
+          <Link href="?tab=add_user">
+            <TabsTrigger value="add-user">Add user</TabsTrigger>
+          </Link>
+        </TabsList>
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Users List</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <form
+                action={async (formData: FormData) => {
+                  "use server";
+                  const referer = headers().get("referer");
+                  if (!referer) return;
+                  const url = new URL(referer);
+                  let query = "?";
+                  for (const pair of formData.entries() as unknown as []) {
+                    if (pair[1]) url.searchParams.set(pair[0], pair[1]);
+                    else url.searchParams.delete(pair[0]);
+                  }
+                  for (const pair of url.searchParams.entries() as unknown as []) {
+                    query += `${pair[0]}=${pair[1]}&`;
+                  }
+                  console.log(query);
+                  redirect(url.origin + query);
+                }}
+                className="flex flex-col gap-y-2"
+              >
+                <h2 className="text-lg font-medium">Filters</h2>
+                <Input
+                  defaultValue={name}
+                  name="name"
+                  placeholder="Search for name"
+                />
+                <div>
+                  <Select name="country" defaultValue={country}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country, i) => (
+                        <SelectItem key={i} value={country.toLocaleLowerCase()}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-x-2">
+                  <Link href="?tab=users" className="w-full">
+                    <Button
+                      type="button"
+                      variant={"outline"}
+                      className="w-full"
+                    >
+                      Clear
+                    </Button>
+                  </Link>
+                  <Button type="submit" className="w-full">
+                    Filter
+                  </Button>
+                </div>
+              </form>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-stone-800">
+                    <TableHead>Id</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersList.map((user) => (
+                    <TableRow key={user.id} className="border-stone-800">
+                      <TableCell className="font-medium">{user.id}</TableCell>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.country}</TableCell>
+                      <TableCell className="text-right">
+                        <form
+                          action={async () => {
+                            "use server";
+                            try {
+                              await db
+                                .delete(users)
+                                .where(eq(users.id, user.id));
+                            } catch (error) {
+                              console.error(error);
+                            }
+                            revalidatePath("/");
+                          }}
+                        >
+                          <button type="submit">
+                            <Trash2
+                              size={20}
+                              className="cursor-pointer text-red-500"
+                            />
+                          </button>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="add-user">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add User</CardTitle>
+            </CardHeader>
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                const name = formData.get("name") as string;
+                const country = formData.get("country") as string;
+                try {
+                  await db.insert(users).values({ name, country });
+                } catch (error) {
+                  console.error(error);
+                }
+                revalidatePath("/");
+                redirect("?tab=users");
+              }}
+            >
+              <CardContent className="space-y-8">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="Enter a name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="name">Country</Label>
+                  <Select name="country" required>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country, i) => (
+                        <SelectItem key={i} value={country.toLocaleLowerCase()}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full">
+                  Add
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
